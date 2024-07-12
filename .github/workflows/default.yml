@@ -1,0 +1,67 @@
+# Copyright (C) 2024 psionicprjkt
+
+name: build-default
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup ENV
+        run: |
+          echo "BUILD_TYPE=default" >> "$GITHUB_ENV"
+          echo "RELEASE_DATE=$(date +"%d%m%Y")" >> "$GITHUB_ENV"
+
+      - name: Setup Android Build ENV
+        run: |
+          git clone https://github.com/akhilnarang/scripts x
+          cd x/setup && bash android_build_env.sh
+
+      - name: Setup Resources
+        run: |
+          git config --global user.name "officialputuid" && git config --global user.email officialputuid@hack.id
+          git clone --recursive --depth=1 https://officialputuid:${{ secrets.GH_TOKEN }}@github.com/${{ secrets.GH_REPO_PRIVATE }} -b ${{ secrets.GH_BRANCH_PRIVATE }} rova && cd rova
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+
+      - name: Setup Version Kernel
+        run: |
+          cd rova
+          d="arch/arm64/configs/rova_defconfig"
+          sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/' $d
+          sed -i 's/CONFIG_LOCALVERSION="-Neural-rova-ksu"/CONFIG_LOCALVERSION="-Neural-rova"/' $d
+          echo "Kernel Info: $kv $(grep CONFIG_LOCALVERSION= $d | cut -d '"' -f2)"
+
+      - name: Setup Build Kernel
+        run: |
+          cd rova
+          bash build.sh
+        timeout-minutes: 45
+        continue-on-error: true
+
+      - name: Upload kernel build logs
+        run: |
+          cd rova
+          curl bashupload.com -T "build_log.txt"
+          curl -T "build_log.txt" https://pixeldrain.com/api/file/
+        timeout-minutes: 2
+        continue-on-error: true
+
+      - name: Setup Release Kernel
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: "${{ env.RELEASE_DATE }}"
+          prerelease: false
+          title: Neural-kernel-rova-${{ env.RELEASE_DATE }}
+          files: |
+            rova/AnyKernel/Neural-kernel-*
