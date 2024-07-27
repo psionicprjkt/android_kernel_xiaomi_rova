@@ -21,6 +21,7 @@ jobs:
         run: |
           echo "BUILD_TYPE=ksu" >> "$GITHUB_ENV"
           echo "RELEASE_DATE=$(date +"%d%m%Y")" >> "$GITHUB_ENV"
+          echo "LC=$(git log -1 --format=%H | cut -c1-7)" >> "$GITHUB_ENV"
 
       - name: Setup Android Build ENV
         run: |
@@ -37,6 +38,7 @@ jobs:
         run: |
           cd rova
           d="arch/arm64/configs/rova_defconfig"
+          sed -i "s/CONFIG_LOCALVERSION=\"-Neural-rova\"/CONFIG_LOCALVERSION=\"-Neural-rova-${{ env.LC }}\"/" $d
           echo "Kernel Info: $kv $(grep CONFIG_LOCALVERSION= $d | cut -d '"' -f2)"
 
       - name: Setup Build Kernel
