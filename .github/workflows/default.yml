@@ -38,7 +38,6 @@ jobs:
           cd rova
           d="arch/arm64/configs/rova_defconfig"
           sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/' $d
-          sed -i 's/CONFIG_LOCALVERSION="-Neural-rova-ksu"/CONFIG_LOCALVERSION="-Neural-rova"/' $d
           echo "Kernel Info: $kv $(grep CONFIG_LOCALVERSION= $d | cut -d '"' -f2)"
 
       - name: Setup Build Kernel
